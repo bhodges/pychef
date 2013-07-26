@@ -44,12 +44,20 @@ class ChefObject(six.with_metaclass(ChefObjectMeta, object)):
 
     api_version = '0.9'
 
-    def __init__(self, name, api=None, skip_load=False):
+    def __init__(self, name, version='_latest', api=None, skip_load=False):
         self.name = name
         self.api = api or ChefAPI.get_global()
         self._check_api_version(self.api)
 
-        self.url = self.__class__.url + '/' + self.name
+        # Cookbooks need some special handling, and we default to the 
+        # latest revision if version goes unspecified.
+        if type(self).__name__ == 'Cookbook':
+            self.version = version
+            self.versions = self.versions(name)
+            self.url = "{0}/{1}/{2}".format(self.__class__.url, self.name, self.version)
+        else:
+            self.url = self.__class__.url + '/' + self.name
+
         self.exists = False
         data = {}
         if not skip_load:
