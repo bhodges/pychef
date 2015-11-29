@@ -48,15 +48,7 @@ class ChefObject(six.with_metaclass(ChefObjectMeta, object)):
         self.name = name
         self.api = api or ChefAPI.get_global()
         self._check_api_version(self.api)
-
-        # Cookbooks need some special handling, and we default to the 
-        # latest revision if version goes unspecified.
-        if type(self).__name__ == 'Cookbook':
-            self.version = version
-            self.versions = self.versions(name)
-            self.url = "{0}/{1}/{2}".format(self.__class__.url, self.name, self.version)
-        else:
-            self.url = self.__class__.url + '/' + self.name
+        self.url = self.__class__._build_url(name, version)
 
         self.exists = False
         data = {}
@@ -146,3 +138,14 @@ class ChefObject(six.with_metaclass(ChefObjectMeta, object)):
         # serialization perhaps).
         if api and cls.api_version_parsed > api.version_parsed:
             raise ChefAPIVersionError("Class %s is not compatible with API version %s" % (cls.__name__, api.version))
+
+    @classmethod
+    def _build_url(cls, name, version):
+        """Determine the url for the request"""
+        # Cookbooks need some special handling, and we default to the
+        # latest revision if version goes unspecified.
+        if cls.__name__ == 'Cookbook':
+            url = "{0}/{1}/{2}".format(cls.url, name, version)
+        else:
+            url = cls.url + '/' + name
+        return url
